@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:18-bookworm
     expose:
       - "5432"
     volumes:
@@ -11,7 +11,6 @@ services:
     depends_on: 
       - postgres
   nginx:
-    image: nginx:alpine
     depends_on:
       - web
 
