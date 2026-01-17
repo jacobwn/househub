@@ -1,0 +1,18 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_DB: mydb
+  web:
+    environment:
+      DATABASE_URL: "postgresql://myuser:mypass@postgres:5432/mydb?schema=public"
+    build:
+      context: ./services/web
+      dockerfile: Dockerfile.prod
+  nginx:
+    ports:
+      - "80:80"
+    build:
+      context: ./infra/nginx
+      dockerfile: Dockerfile.prod

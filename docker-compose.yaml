@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  web:
+    expose:
+      - "3000"
+    depends_on: 
+      - postgres
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
