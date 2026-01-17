@@ -14,5 +14,5 @@ services:
     ports:
       - "80:80"
     build:
-      context: ./infra/nginx
-      dockerfile: Dockerfile.nginx.prod
+      context: .
+      dockerfile: infra/nginx/Dockerfile.nginx.prod
