@@ -13,17 +13,17 @@ jobs:
   # ------------------------
   # Continuous Integration
   # ------------------------
-  test:
-    name: Run Tests
-    runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+  # test:
+  #   name: Run Tests
+  #   runs-on: self-hosted
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v3
 
-      - name: Run fake tests
-        run: |
-          echo "Running unit tests..."
-          echo "All tests passed ✅"
+  #     - name: Run fake tests
+  #       run: |
+  #         echo "Running unit tests..."
+  #         echo "All tests passed ✅"
 
   # ------------------------
   # Staging Deployment

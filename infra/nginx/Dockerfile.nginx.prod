@@ -1,5 +1,5 @@
 # Build stage
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 COPY services/web/package*.json ./
@@ -9,7 +9,7 @@ COPY services/web ./
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:slim
 COPY --from=builder /app/.next/static /usr/share/nginx/html/_next/static
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
