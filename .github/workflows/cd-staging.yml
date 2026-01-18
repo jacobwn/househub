@@ -47,13 +47,14 @@ jobs:
         uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -avz --progress
+          path: |
+            ./docker-compose.yaml
+            ./docker-compose.prod.yaml
           remote_path: /home/deploy/app/
           remote_host: ${{ secrets.STAGING_HOST }}
           remote_user: ${{ secrets.STAGING_USER }}
-          local_path: |
-            ./docker-compose.yaml
-            ./docker-compose.prod.yaml
-          ssh_private_key: ${{ secrets.STAGING_SSH_KEY }}
+          remote_key: ${{ secrets.STAGING_SSH_KEY }}
+
 
       # - name: Deploy on server
       #   uses: appleboy/ssh-action@v1.2.4
