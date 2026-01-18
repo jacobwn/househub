@@ -62,7 +62,7 @@ jobs:
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           env:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}  # <- uses the short SHA from previous step
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
           script: |
             cd /home/deploy/app
             echo "IMAGE_TAG=$IMAGE_TAG" > .env
