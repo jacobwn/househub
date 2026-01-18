@@ -45,8 +45,8 @@ jobs:
 
       - name: Debug secrets
         run: |
-          echo "Host is set? ${{ secrets.STAGING_HOST != '' }}"
-          echo "User is set? ${{ secrets.STAGING_USER != '' }}"
+          echo "Host is set? ${{ secrets.STAGING_HOST }}"
+          echo "User is set? ${{ secrets.STAGING_USER }}"
 
       - name: Sync docker-compose files
         uses: burnett01/rsync-deployments@7.1.0
