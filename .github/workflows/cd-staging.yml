@@ -29,68 +29,68 @@ jobs:
       - name: Set IMAGE_TAG from commit SHA
         run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
 
-      # # Step 1: Build Next.js server image
-      # - name: Build web image
-      #   run: docker build -f ./services/web/Dockerfile.web.prod -t ghcr.io/${{ github.repository }}/web:$IMAGE_TAG ./services/web
+      # Step 1: Build Next.js server image
+      - name: Build web image
+        run: docker build -f ./services/web/Dockerfile.web.prod -t ghcr.io/${{ github.repository }}/web:$IMAGE_TAG ./services/web
 
-      # - name: Push web image
-      #   run: docker push ghcr.io/${{ github.repository }}/web:$IMAGE_TAG
+      - name: Push web image
+        run: docker push ghcr.io/${{ github.repository }}/web:$IMAGE_TAG
 
-      # # Step 2: Build Nginx image
-      # - name: Build nginx image
-      #   run: docker build -f ./infra/nginx/Dockerfile.nginx.prod -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
+      # Step 2: Build Nginx image
+      - name: Build nginx image
+        run: docker build -f ./infra/nginx/Dockerfile.nginx.prod -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
 
-      # - name: Push nginx image
-      #   run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
+      - name: Push nginx image
+        run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
 
-      # # - name: Sync docker-compose files
-      # #   uses: burnett01/rsync-deployments@7.1.0
-      # #   with:
-      # #     switches: -avz --progress
-      # #     remote_path: /home/deploy/app/
-      # #     remote_host: ${{ secrets.STAGING_HOST }}
-      # #     remote_user: ${{ secrets.STAGING_USER }}
-      # #     local_path: |
-      # #       ./docker-compose.yaml
-      # #       ./docker-compose.prod.yaml
-      # #     ssh_private_key: ${{ secrets.STAGING_SSH_KEY }}
+      # - name: Sync docker-compose files
+      #   uses: burnett01/rsync-deployments@7.1.0
+      #   with:
+      #     switches: -avz --progress
+      #     remote_path: /home/deploy/app/
+      #     remote_host: ${{ secrets.STAGING_HOST }}
+      #     remote_user: ${{ secrets.STAGING_USER }}
+      #     local_path: |
+      #       ./docker-compose.yaml
+      #       ./docker-compose.prod.yaml
+      #     ssh_private_key: ${{ secrets.STAGING_SSH_KEY }}
 
-      # # - name: Deploy on server
-      # #   uses: appleboy/ssh-action@v1.2.4
-      # #   with:
-      # #     host: ${{ secrets.STAGING_HOST }}
-      # #     username: ${{ secrets.STAGING_USER }}
-      # #     key: ${{ secrets.STAGING_SSH_KEY }}
-      # #     env:
-      # #       IMAGE_TAG: ${{ env.IMAGE_TAG }}  # <- uses the short SHA from previous step
-      # #     script: |
-      # #       cd /home/deploy/app
-      # #       echo "IMAGE_TAG=$IMAGE_TAG" > .env
-      # #       docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
-      # #       docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
-
-      # 6️⃣ Deploy to staging droplet via SSH
-      # - name: Deploy to staging droplet
-      #   uses: appleboy/ssh-action@v0.1.7
+      # - name: Deploy on server
+      #   uses: appleboy/ssh-action@v1.2.4
       #   with:
       #     host: ${{ secrets.STAGING_HOST }}
       #     username: ${{ secrets.STAGING_USER }}
       #     key: ${{ secrets.STAGING_SSH_KEY }}
-      #     source: |
-      #       ./docker-compose.yaml
-      #       ./docker-compose.prod.yaml
-      #     target: /home/deploy/app/
+      #     env:
+      #       IMAGE_TAG: ${{ env.IMAGE_TAG }}  # <- uses the short SHA from previous step
       #     script: |
       #       cd /home/deploy/app
       #       echo "IMAGE_TAG=$IMAGE_TAG" > .env
       #       docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
       #       docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
 
-      # # 7️⃣ Optional: Confirm deployed image
-      # - name: Show deployed image
-      #   uses: appleboy/ssh-action@v0.1.7
-      #   with:
-      #     host: ${{ secrets.STAGING_HOST }}
-      #     username: ${{ secrets.STAGING_USER }}
-      #     key: ${{ secrets.STAGING_SSH_KEY }}
-      #     script: docker images | grep app
+      6️⃣ Deploy to staging droplet via SSH
+      - name: Deploy to staging droplet
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          source: |
+            ./docker-compose.yaml
+            ./docker-compose.prod.yaml
+          target: /home/deploy/app/
+          script: |
+            cd /home/deploy/app
+            echo "IMAGE_TAG=$IMAGE_TAG" > .env
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+
+      # 7️⃣ Optional: Confirm deployed image
+      - name: Show deployed image
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: docker images | grep app
