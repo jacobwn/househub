@@ -3,7 +3,7 @@ FROM node:24-slim AS builder
 WORKDIR /app
 
 COPY services/web/package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY services/web ./
 RUN npm run build

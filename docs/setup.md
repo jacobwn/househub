@@ -60,8 +60,56 @@ https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
 - "HttpError is basically your standardized way to represent errors that should be returned to the client with an HTTP status code."
 
 
+Overriding an old github runner with a new one:
+- Stop the systemd service:
+sudo systemctl stop githubrunner.service
+- Remove the old action-runner folder
+- Use github instruction to get a new action-runner folder
+sudo -i -u githubrunner [command]
+- Make it so that the runner user owns the action-runner folder
+sudo chown -R githubrunner:githubrunner /home/githubrunner/actions-runner
+- Register the runner with github
+- Start the runner again
+sudo systemctl start githubrunner.service
+
+
+
+
+Setup to make github staging gi workflow file work:
+- Make a new user in the staging droplet (that will run docker compose up)
+sudo adduser --disabled-password --gecos "" deploy
+sudo usermod -aG docker deploy
+- Add repo wide github secrets, STAGING_HOST (droplet ip), STAGING_USER (user named deploy)
+
+ssh deploy@droplet_ip "mkdir -p ~/.ssh && chmod 700 ~/.ssh"
+cat staging_key.pub | ssh user@droplet_ip "cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+ssh deploy@167.71.127.111 "mkdir -p ~/.ssh && chmod 700 ~/.ssh"
+cat staging_key.pub | ssh deploy@167.71.127.111 "cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+
+Droplet:
+ssh root@your_droplet_ip
+mkdir -p /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+Local:
+cat staging_key.pub
+nano /home/deploy/.ssh/authorized_keys
+chmod 600 /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh (or just do "sudo -u deploy for all commands)
+ssh -i staging_key deploy@your_droplet_ip (test)
+
+
 
 curl -X POST http://localhost:8080/api/houses \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "123 Main St",
+    "price": 350000,
+    "bedrooms": 3,
+    "bathrooms": 2
+  }'
+
+  curl -X POST http://localhost:8080/api/houses \
   -H "Content-Type: application/json" \
   -d '{
     "address": "123 Main St",
