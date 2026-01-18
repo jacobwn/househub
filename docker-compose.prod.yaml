@@ -5,14 +5,13 @@ services:
       POSTGRES_PASSWORD: mypass
       POSTGRES_DB: mydb
   web:
+    image: ghcr.io/jacobwn/househub/web:${IMAGE_TAG}
     environment:
       DATABASE_URL: "postgresql://myuser:mypass@postgres:5432/mydb?schema=public"
-    build:
-      context: ./services/web
-      dockerfile: Dockerfile.prod
   nginx:
+    image: ghcr.io/jacobwn/househub/nginx:${IMAGE_TAG}
     ports:
       - "80:80"
     build:
-      context: ./infra/nginx
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: infra/nginx/Dockerfile.nginx.prod
