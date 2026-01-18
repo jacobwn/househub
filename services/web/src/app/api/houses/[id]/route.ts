@@ -1,19 +1,17 @@
 // src/app/api/houses/[id]/route.ts
 import { NextRequest } from "next/server";
 import { getHouse, updateHouse, deleteHouse } from "@/services/houses";
-import { handleApi } from "@/lib/handleApi";
+// import { handleApi } from "@/lib/handleApi";
+import { withApi } from "@/lib/withApi";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  return handleApi(async () => getHouse(params.id));
-}
+// GET /api/houses/[id]
+export const GET = withApi(({ id }) => getHouse(id));
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  return handleApi(async () => {
-    const body = await req.json();
-    return updateHouse(params.id, body);
-  });
-}
+// PUT /api/houses/[id]
+export const PUT = withApi(async ({ id }, req: NextRequest) => {
+  const body = await req.json();
+  return updateHouse(id, body);
+});
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  return handleApi(async () => deleteHouse(params.id));
-}
+// DELETE /api/houses/[id]
+export const DELETE = withApi(({ id }) => deleteHouse(id));
