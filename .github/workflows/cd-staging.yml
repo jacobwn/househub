@@ -43,21 +43,41 @@ jobs:
       # - name: Push nginx image
       #   run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
 
-      - name: Debug secrets
-        run: |
-          echo "Host is set? ${{ secrets.STAGING_HOST }}"
-          echo "User is set? ${{ secrets.STAGING_USER }}"
 
-      - name: Sync docker-compose files
-        uses: burnett01/rsync-deployments@7.1.0
+      - name: Copy compose files
+        uses: appleboy/scp-action@v1
         with:
-          switches: -avz --progress
-          path: |
-            ./docker-compose.yaml
-          remote_path: /home/deploy/app/
-          remote_host: ${{ secrets.STAGING_HOST }}
-          remote_user: ${{ secrets.STAGING_USER }}
-          remote_key: ${{ secrets.STAGING_SSH_KEY }}
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          # port: ${{ secrets.STAGING_PORT }}
+          source: |
+            docker-compose.yaml
+            docker-compose.prod.yaml
+          target: /home/deploy/app/
+
+      - name: Restart compose
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          # port: ${{ secrets.STAGING_PORT }}
+          script: |
+            cd /home/deploy/app
+            docker-compose down
+            docker-compose up -d --build
+
+      # - name: Sync docker-compose files
+      #   uses: burnett01/rsync-deployments@7.1.0
+      #   with:
+      #     switches: -avz --progress
+      #     path: |
+      #       ./docker-compose.yaml
+      #     remote_path: /home/deploy/app/
+      #     remote_host: ${{ secrets.STAGING_HOST }}
+      #     remote_user: ${{ secrets.STAGING_USER }}
+      #     remote_key: ${{ secrets.STAGING_SSH_KEY }}
 
 
       # - name: Deploy on server
