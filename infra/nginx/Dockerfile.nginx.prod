@@ -6,6 +6,7 @@ COPY services/web/package*.json ./
 RUN npm ci
 
 COPY services/web ./
+RUN npx prisma generate
 RUN npm run build
 
 # Production stage
