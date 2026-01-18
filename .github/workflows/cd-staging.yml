@@ -49,7 +49,6 @@ jobs:
           switches: -avz --progress
           path: |
             ./docker-compose.yaml
-            ./docker-compose.staging.yaml
           remote_path: /home/deploy/app/
           remote_host: ${{ secrets.STAGING_HOST }}
           remote_user: ${{ secrets.STAGING_USER }}
