@@ -18,28 +18,28 @@ import { createHouse } from "@/services/houses";
 
 export default async function Page() {
   // Crate a new house
-  const input: CreateHouseInput = CreateHouseContract.parse({
-    address: "owl street 9",
-    price: 500000,
-    bedrooms: 3,
-    bathrooms: 2
-  })
-  createHouse(input)
+  // const input: CreateHouseInput = CreateHouseContract.parse({
+  //   address: "owl street 9",
+  //   price: 500000,
+  //   bedrooms: 3,
+  //   bathrooms: 2
+  // })
+  // createHouse(input)
 
 
-  // Fetch first 5 users
-  const houses: House[] = await prisma.house.findMany();
+  // // Fetch first 5 users
+  // const houses: House[] = await prisma.house.findMany();
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <h1>Users</h1>
-      <ul>
+      {/* <ul>
         {houses.map((house) => (
           <li key={house.id}>
             ID: {house.id}, Name: {house.address ?? "No name"}, Email: {house.id} is OK
           </li>
         ))}
-      </ul>
+      </ul> */}
 
       <h2>Interactive Counter</h2>
       <Counter />
