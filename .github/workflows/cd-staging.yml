@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.IMAGE_TAG }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,6 +23,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
+
+      - name: Set IMAGE_TAG from commit SHA
+        id: set-tag
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_OUTPUT
 
       - name: Set IMAGE_TAG from commit SHA
         run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
@@ -57,7 +66,7 @@ jobs:
       - name: Deploy on server
         uses: appleboy/ssh-action@v1
         env:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
             GHCR_PAT: ${{ secrets.GHCR_PAT }}
         with:
           host: ${{ secrets.STAGING_HOST }}
