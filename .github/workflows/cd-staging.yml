@@ -54,6 +54,24 @@ jobs:
           source: "docker-compose.yaml,docker-compose.prod.yaml"
           target: /home/deploy/app/
 
+
+
+      # - name: Deploy on server
+      #   uses: appleboy/ssh-action@v1.2.4
+      #   with:
+      #     host: ${{ secrets.STAGING_HOST }}
+      #     username: ${{ secrets.STAGING_USER }}
+      #     key: ${{ secrets.STAGING_SSH_KEY }}
+      #     env:
+      #       IMAGE_TAG: ${{ env.IMAGE_TAG }}
+      #     script: |
+      #       cd /home/deploy/app
+      #       echo "IMAGE_TAG=$IMAGE_TAG" > .env
+      #       docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
+      #       docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+
+
+
       # - name: Sync docker-compose files
       #   uses: burnett01/rsync-deployments@7.1.0
       #   with:
@@ -64,21 +82,6 @@ jobs:
       #     remote_host: ${{ secrets.STAGING_HOST }}
       #     remote_user: ${{ secrets.STAGING_USER }}
       #     remote_key: ${{ secrets.STAGING_SSH_KEY }}
-
-
-      - name: Deploy on server
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          env:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          script: |
-            cd /home/deploy/app
-            echo "IMAGE_TAG=$IMAGE_TAG" > .env
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
 
       # 6️⃣ Deploy to staging droplet via SSH
       # - name: Deploy to staging droplet
