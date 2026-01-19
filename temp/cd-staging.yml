@@ -33,7 +33,7 @@ jobs:
         run: docker push ghcr.io/${{ github.repository }}/web:$IMAGE_TAG
 
       - name: Build nginx image
-        run: docker build -f ./infra/nginx/Dockerfile.nginx.staging -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
+        run: docker build -f ./infra/nginx/Dockerfile.nginx.prod -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
 
       - name: Push nginx image
         run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
@@ -45,7 +45,7 @@ jobs:
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: ${{ secrets.STAGING_PORT }}
-          source: "docker-compose.yaml,docker-compose.staging.yaml"
+          source: "docker-compose.yaml,docker-compose.prod.yaml"
           target: /home/deploy/app/
 
       - name: Deploy on server
@@ -62,6 +62,6 @@ jobs:
             cd /home/deploy/app
             echo "IMAGE_TAG=$IMAGE_TAG" > .env
             echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml up -d
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
 
