@@ -7,7 +7,10 @@ services:
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt 
-      
+  web:
+    image: ghcr.io/jacobwn/househub/web:${IMAGE_TAG}
+    environment:
+      DATABASE_URL: "postgresql://myuser:mypass@postgres:5432/mydb?schema=public"
   certbot:
     image: certbot/certbot
     container_name: certbot
