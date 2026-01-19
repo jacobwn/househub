@@ -1,14 +1,12 @@
 import { NextRequest } from "next/server";
 import { listHouses, createHouse } from "@/services/houses";
-import { handleApi } from "@/lib/handleApi";
+import { withApi } from "@/lib/withApi";
 
-export async function GET() {
-  return handleApi(async () => listHouses());
-}
+// GET /api/houses
+export const GET = withApi(() => listHouses());
 
-export async function POST(req: NextRequest) {
-  return handleApi(async () => {
-    const body = await req.json();
-    return createHouse(body);
-  });
-}
+// POST /api/houses
+export const POST = withApi(async (_params, req: NextRequest) => {
+  const body = await req.json();
+  return createHouse(body);
+});
