@@ -45,15 +45,15 @@ jobs:
         run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
 
 
-      - name: Copy compose files via SCP
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_PORT }}     # omit if default 22
-          source: "docker-compose.yaml,docker-compose.prod.yaml"
-          target: /home/deploy/app/
+      # - name: Copy compose files via SCP
+      #   uses: appleboy/scp-action@v1
+      #   with:
+      #     host: ${{ secrets.STAGING_HOST }}
+      #     username: ${{ secrets.STAGING_USER }}
+      #     key: ${{ secrets.STAGING_SSH_KEY }}
+      #     port: ${{ secrets.STAGING_PORT }}     # omit if default 22
+      #     source: "docker-compose.yaml,docker-compose.prod.yaml"
+      #     target: /home/deploy/app/
 
 
 
