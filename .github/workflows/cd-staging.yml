@@ -51,12 +51,14 @@ jobs:
           target: /home/deploy/app/
 
       - name: Deploy on server
-        uses: appleboy/ssh-action@v1.2.4
+        uses: appleboy/ssh-action@v1
+        env:
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          env: IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          envs: IMAGE_TAG
           script: |
             cd /home/deploy/app
             echo "IMAGE_TAG=$IMAGE_TAG" > .env
