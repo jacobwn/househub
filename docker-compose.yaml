@@ -11,6 +11,7 @@ services:
     depends_on: 
       - postgres
   nginx:
+    image: nginx:1.28.1-alpine
     depends_on:
       - web
 
