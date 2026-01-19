@@ -41,6 +41,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Copy compose files via SCP
         uses: appleboy/scp-action@v1
         with:
