@@ -32,7 +32,7 @@ export default async function Page() {
 
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>Userss</h1>
+      <h1>Usrss</h1>
       {/* <ul>
         {houses.map((house) => (
           <li key={house.id}>
