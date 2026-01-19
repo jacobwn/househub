@@ -23,3 +23,43 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
+
+      - name: Set IMAGE_TAG from commit SHA
+        run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Build web image
+        run: docker build -f ./services/web/Dockerfile.web.prod -t ghcr.io/${{ github.repository }}/web:$IMAGE_TAG ./services/web
+
+      - name: Push web image
+        run: docker push ghcr.io/${{ github.repository }}/web:$IMAGE_TAG
+
+      - name: Build nginx image
+        run: docker build -f ./infra/nginx/Dockerfile.nginx.prod -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
+
+      - name: Push nginx image
+        run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
+
+      - name: Copy compose files via SCP
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_PORT }}
+          source: "docker-compose.yaml,docker-compose.prod.yaml"
+          target: /home/deploy/app/
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          env:
+            IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          script: |
+            cd /home/deploy/app
+            echo "IMAGE_TAG=$IMAGE_TAG" > .env
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+
