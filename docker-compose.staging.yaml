@@ -1,4 +1,13 @@
 services:
+  postgres:
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_DB: mydb
+  web:
+    image: ghcr.io/jacobwn/househub/web:${IMAGE_TAG}
+    environment:
+      DATABASE_URL: "postgresql://myuser:mypass@postgres:5432/mydb?schema=public"
   nginx:
     image: ghcr.io/jacobwn/househub/nginx:${IMAGE_TAG}
     container_name: nginx
@@ -7,10 +16,6 @@ services:
       - "443:443"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt 
-  web:
-    image: ghcr.io/jacobwn/househub/web:${IMAGE_TAG}
-    environment:
-      DATABASE_URL: "postgresql://myuser:mypass@postgres:5432/mydb?schema=public"
   certbot:
     image: certbot/certbot
     container_name: certbot
