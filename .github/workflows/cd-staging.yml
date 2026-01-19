@@ -48,17 +48,3 @@ jobs:
           source: "docker-compose.yaml,docker-compose.prod.yaml"
           target: /home/deploy/app/
 
-      - name: Deploy on server
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          env:
-            IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          script: |
-            cd /home/deploy/app
-            echo "IMAGE_TAG=$IMAGE_TAG" > .env
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
-
