@@ -4,11 +4,9 @@ on:
   pull_request:
     branches:
       - main
-      - chore/setup
   push:
     branches:
       - main
-      - chore/setup
 
 jobs:
   build-and-deploy:
@@ -54,14 +52,16 @@ jobs:
         uses: appleboy/ssh-action@v1
         env:
             IMAGE_TAG: ${{ env.IMAGE_TAG }}
+            GHCR_PAT: ${{ secrets.GHCR_PAT }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: IMAGE_TAG
+          envs: IMAGE_TAG, GHCR_PAT
           script: |
             cd /home/deploy/app
             echo "IMAGE_TAG=$IMAGE_TAG" > .env
+            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
             docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
             docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
 
