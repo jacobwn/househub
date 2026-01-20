@@ -5,8 +5,10 @@
 5. Set up ci/cd github pipeline (runner, environment, secrets) for staging. ✅
 6. Set up so that the page can be reached from jacobvn.com (records pointing to the droplets ip and so on) ✅
 7. Set up https ✅
-8. Set up staging.jacobvn.com ✅
-9. Set up jacobvn.com production with cd workflow file
+8. Set up staging.jacobvn.com without -infra repo ✅
+9. Set up staging.jacobvn.com with -infra repo ✅
+
+9. Set up jacobvn.com production with cd workflow file 
 10. Set up actual postgresql passwords/username and save in github secrets
 
 8. Set up oauth

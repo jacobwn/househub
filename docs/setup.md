@@ -201,3 +201,30 @@ sudo crontab -e
 -v /srv/househub-infra/webroot:/var/www/certbot \
 certbot/certbot renew --webroot -w /var/www/certbot \
 --deploy-hook "docker exec nginx nginx -s reload"
+
+
+
+RELEASE="v1.2.3"
+git checkout "$RELEASE"
+IMAGE_TAG="$RELEASE" docker compose -f docker-compose.prod.yaml --env-file .env.prod pull
+IMAGE_TAG="$RELEASE" docker compose -f docker-compose.prod.yaml --env-file .env.prod up -d
+``` |
+| **Separate CI/CD and deployment** | CI/CD builds/pushes images and tags infra, but **does not deploy automatically**. Production ops deploy using the release tag. |
+
+This way:
+
+- Every rollback is **deterministic**.
+- You never accidentally deploy a newer infra commit with an old image.
+- Staging can still deploy “latest” freely without affecting prod.
+
+---
+
+💡 **Key insight:**  
+
+> In production, a release = **specific infra commit + specific image tag**. They must move together. Treat them as a single unit for rollback purposes.  
+
+---
+
+If you want, I can sketch a **diagram/flow of how your staging vs prod deployment should work**, showing how the infra repo and images are versioned and deployed safely. It makes the rollback concept very visual.  
+
+Do you want me to do that?

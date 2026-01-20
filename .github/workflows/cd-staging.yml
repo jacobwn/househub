@@ -53,4 +53,4 @@ jobs:
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           # script: /srv/househub-infra/scripts/deploy-staging.sh 3a37996
-          script: /srv/househub-infra/scripts/deploy.sh staging ${{ needs.build.outputs.image_tag }}
+          script: /srv/househub-infra/scripts/deploy-staging.sh ${{ needs.build.outputs.image_tag }}

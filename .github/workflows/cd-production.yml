@@ -48,38 +48,13 @@ jobs:
           docker tag ghcr.io/jacobwn/househub/nginx:$SHA_TAG ghcr.io/jacobwn/househub/nginx:$VERSION_TAG
           docker push ghcr.io/jacobwn/househub/nginx:$VERSION_TAG
 
-      - name: Copy compose files via SCP
-        uses: appleboy/scp-action@v1
+      - name: Trigger deploy on server
+        uses: appleboy/ssh-action@v1
+        env:
+          VERSION_TAG: ${{ env.VERSION_TAG }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_PORT }}
-          source: "docker-compose.yaml,docker-compose.prod.yaml"
-          target: /home/deploy/app/
-
-      # Deploy to production server
-      - name: Deploy to production server
-        uses: appleboy/ssh-action@v1
-        env:
-          VERSION_TAG: ${{ env.VERSION_TAG }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          port: ${{ secrets.PROD_PORT }}
-          envs: VERSION_TAG, GHCR_PAT
-          script: |
-            cd /home/deploy/app
-            echo "Deploying version $VERSION_TAG"
-
-            # Login to GHCR (needed for docker-compose pull)
-            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
-
-            # Clean unused images (optional)
-            docker system prune -af
-
-            # Pull version-tagged images and deploy
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+          envs: VERSION_TAG
+          script: /srv/househub-infra/scripts/deploy-prod.sh $VERSION_TAG
