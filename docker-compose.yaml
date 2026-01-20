@@ -4,13 +4,14 @@ services:
     expose:
       - "5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
   web:
     expose:
       - "3000"
     depends_on: 
       - postgres
   nginx:
+    image: nginx:1.28.1-alpine
     depends_on:
       - web
 
