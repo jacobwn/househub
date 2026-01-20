@@ -83,31 +83,3 @@ jobs:
             # Pull version-tagged images and deploy
             docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
             docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
-
-
-
-
-
-  deploy-staging:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy on server
-        uses: appleboy/ssh-action@v1
-        env:
-            IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
-            GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: IMAGE_TAG, GHCR_PAT
-          script: |
-            cd /home/deploy/app
-            echo "IMAGE_TAG=$IMAGE_TAG" > .env
-            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
-            docker system prune -af
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml up -d
-
-            docker-compose -f docker-compose.prod.yml run --rm web npx prisma migrate deploy

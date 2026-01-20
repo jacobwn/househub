@@ -38,7 +38,7 @@ jobs:
         run: docker push ghcr.io/${{ github.repository }}/web:$IMAGE_TAG
 
       - name: Build nginx image
-        run: docker build -f ./infra/nginx/Dockerfile.nginx.staging -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
+        run: docker build -f ./infra/nginx/Dockerfile.nginx.prod -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
 
       - name: Push nginx image
         run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
@@ -47,32 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Copy compose files via SCP
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_PORT }}
-          source: "docker-compose.yaml,docker-compose.staging.yaml"
-          target: /home/deploy/app/
-
-      - name: Deploy on server
+      - name: Trigger deploy on server
         uses: appleboy/ssh-action@v1
-        env:
-            IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
-            GHCR_PAT: ${{ secrets.GHCR_PAT }}
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: IMAGE_TAG, GHCR_PAT
-          script: |
-            cd /home/deploy/app
-            echo "IMAGE_TAG=$IMAGE_TAG" > .env
-            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml up -d
+          script: /srv/househub-infra/scripts/deploy.sh staging ${{ needs.build.outputs.image_tag }}

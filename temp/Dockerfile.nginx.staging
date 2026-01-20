@@ -13,10 +13,10 @@ RUN npm run build
 FROM nginx:1.29.4-alpine
 COPY --from=builder /app/.next/static /usr/share/nginx/html/_next/static
 # Remove default config
-RUN rm /etc/nginx/conf.d/default.conf
+# RUN rm /etc/nginx/conf.d/default.conf
 # Copy configs
-COPY infra/nginx/nginx.common.conf /etc/nginx/conf.d/nginx.common.conf
-COPY infra/nginx/nginx.staging.conf     /etc/nginx/conf.d/default.conf
+# COPY infra/nginx/nginx.common.conf /etc/nginx/conf.d/nginx.common.conf
+# COPY infra/nginx/nginx.staging.conf     /etc/nginx/conf.d/default.conf
 
 # Expose port 80
 EXPOSE 80

@@ -78,6 +78,17 @@ https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
 
 
 # Flows
+## Set up HTTPS certificates
+- Create certificates on the droplet
+  ```bash
+  sudo docker run -it --rm --name certbot \
+    -p 80:80 \
+    -v "/etc/letsencrypt:/etc/letsencrypt" \
+    -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+    certbot/certbot certonly
+  ```
+- Mount the certificate folder into the nginx container
+- Set up certbot service that regularly looks for a new certificate
 ## Overriding an old github runner with a new one:
 - Stop the systemd service:
 sudo systemctl stop githubrunner.service
@@ -142,4 +153,51 @@ curl -X POST http://localhost:8080/api/houses \
   -d jacobvn.com -d staging.jacobvn.com \
   --email jacob.fadsss@gmail.com --agree-tos --no-eff-email
 
+
+
+  sudo docker run -it --rm --name certbot \
+    -p 80:80 \
+    -v "/etc/letsencrypt:/etc/letsencrypt" \
+    -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+    certbot/certbot certonly
+
   docker logs certbot
+
+
+## Set up [appname]-infra folder
+- Create a repo named [appname]-infra
+- Have it be a separate folder named [appname]-infra
+- Create a folder named /srv/[appname]-infra that the deploy user owns
+sudo mkdir /srv/househub-infra
+sudo chown deploy:deploy /srv/househub-infra
+- Set up deploy key on github so that the server can pull from github
+sudo -u deploy ssh-keygen -t ed25519 -C "deploy@househub-staging-sfo2"
+udo -u deploy ssh -T git@github.com
+- Do an initial clone of the repo into the srv folder
+root@househub-prod-sfo2:/srv# sudo -u deploy git clone git@github.com:jacobwn/househub-infra.git
+- Log in to ghcr (image registry) manually through docker and it will keep logged in
+echo "[PAT (personal access token)]" | docker login ghcr.io -u jacobwn --password-stdin
+
+
+sudo rsync -a /srv/househub-infra/certs/letsencrypt/ /srv/househub-data/certs/letsencrypt/
+sudo docker run -it --rm \
+  -v /srv/househub-data/certs/letsencrypt:/etc/letsencrypt \
+  certbot/certbot certificates
+
+sudo crontab -e
+
+
+
+  sudo docker run -it --rm --name certbot \
+  -p 80:80 \
+  -v "/srv/househub-infra/certs/letsencrypt/config:/etc/letsencrypt" \
+  -v "/srv/househub-infra/certs/letsencrypt/lib:/var/lib/letsencrypt" \
+  certbot/certbot certonly \
+
+
+
+0 */12 * * * docker run --rm \
+-v /srv/househub-infra/certs/letsencrypt:/etc/letsencrypt \
+-v /srv/househub-infra/webroot:/var/www/certbot \
+certbot/certbot renew --webroot -w /var/www/certbot \
+--deploy-hook "docker exec nginx nginx -s reload"
