@@ -57,4 +57,4 @@ jobs:
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           envs: VERSION_TAG
-          script: /srv/househub-infra/scripts/deploy-prod.sh $VERSION_TAG
+          script: /srv/househub-infra/scripts/bootstrap.sh prod $VERSION_TAG
