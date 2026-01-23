@@ -1,0 +1,27 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_DB: mydb
+  web:
+    image: ghcr.io/jacobwn/househub/web:${IMAGE_TAG}
+    environment:
+      DATABASE_URL: "postgresql://myuser:mypass@postgres:5432/mydb?schema=public"
+  nginx:
+    image: ghcr.io/jacobwn/househub/nginx:${IMAGE_TAG}
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt 
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: /bin/sh -c "while :; do sleep 12h; certbot renew --deploy-hook 'docker exec nginx nginx -s reload'; done"
+  

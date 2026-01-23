@@ -1,0 +1,44 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy compose files via SCP
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_PORT }}
+          source: "docker-compose.yaml,docker-compose.staging.yaml"
+          target: /home/deploy/app/
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_PORT }}
+          script: |
+            IMAGE_TAG=${{ github.event.inputs.image_tag }}
+            echo "Deploying image tag $IMAGE_TAG"
+
+            # Login to GHCR (on server)
+            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
+
+            # Pull the image(s) and deploy
+            docker pull ghcr.io/jacobwn/househub/web:$IMAGE_TAG
+            docker pull ghcr.io/jacobwn/househub/nginx:$IMAGE_TAG
+            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
