@@ -13,7 +13,7 @@
 10. Set up actual postgresql passwords/username and save in github secrets
 
 8. Set up staging.jacobvn.com ✅
-9. Set up jacobvn.com production with cd workflow file
+9. Set up jacobvn.com production with cd workflow file ✅
 10. Set up actual postgresql passwords/username and save in github secrets
 
 

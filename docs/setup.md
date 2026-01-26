@@ -74,21 +74,41 @@ https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
 
 # Vocabulary
 - "A boundary is where data enters your system from something you do not fully control."
-- "HttpError (an error class) is basically your standardized way to represent errors that should be returned to the client with an HTTP status code."
+- "HttpError (an error class) is basically your standardized way to repr
+esent errors that should be returned to the client with an HTTP status code."
 
 
 # Flows
+## Log in to ghcr.io on docker
+- Get a PAT (personal access token) from github (it is the password to log into ghcr.io)
+- Log into Docker on the production server (the deploy user needs to be the one that runs "docker login ghcr.io)
+sudo -u deploy bash -c 'echo "[PAT]" | docker login ghcr.io -u jacobwn --password-stdin'
+- Test to log in on the production server
+sudo -u deploy docker login ghcr.io
+
+## Squash a local branch
+- Create a temporary orphaned branch
+- Stage all the files
+- Do an initial commit
+- Delete the old main branch and rename the orphaned branch to main
+git branch -D main
+git branch -m main
+- Force push to origin
+git push -f origin main
+## Add a new cron job
+- crontab -l to view cron jobs
+- crontab -u to add cron jobs
 ## Set up HTTPS certificates
 - Create certificates on the droplet
   ```bash
   sudo docker run -it --rm --name certbot \
     -p 80:80 \
-    -v "/etc/letsencrypt:/etc/letsencrypt" \
-    -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
+    -v "/srv/househub-data/certs/letsencrypt:/etc/letsencrypt" \
     certbot/certbot certonly
   ```
 - Mount the certificate folder into the nginx container
-- Set up certbot service that regularly looks for a new certificate
+- Set up cron job that regularly looks for a new certificate (see other flow)
+
 ## Overriding an old github runner with a new one:
 - Stop the systemd service:
 sudo systemctl stop githubrunner.service
@@ -108,7 +128,7 @@ sudo systemctl start githubrunner.service
 
 ## Setting up connection between droplet and GitHub Actions workflow
 ### overview 
-You get a ssh private/public pair and put the public one on the droplet, and give
+You get a ssh private/public pair and put the public one on the droplet, and give github secret the private one
 - Make a ssh private/public pair
 - Give public key to droplet user that will run "docker compose up" (usually called "deploy")
 - Give private key to github secret
@@ -119,7 +139,9 @@ You get a ssh private/public pair and put the public one on the droplet, and giv
 sudo adduser --disabled-password --gecos "" deploy
 sudo usermod -aG docker deploy
 ####  Local:
-- Create a ssh pair (should later be deleted)
+- Create a ssh pair (should later be deleted), N is for extra password
+ssh-keygen -t ed25519 -f ./key -C "prod server" -N ""
+- The above creates a key pair in the current folder
 #### Droplet:
 ssh root@your_droplet_ip
 mkdir -p /home/deploy/.ssh
@@ -128,42 +150,13 @@ chmod 700 /home/deploy/.ssh
 cat staging_key.pub
 ####  Droplet:
 nano /home/deploy/.ssh/authorized_keys
+- Paste in the public key
 chmod 600 /home/deploy/.ssh/authorized_keys
 chown -R deploy:deploy /home/deploy/.ssh (or just do "sudo -u deploy for all commands)
+- Do the following in the folder where you made the ssh pair (local computer) to test
 ssh -i staging_key deploy@your_droplet_ip (test)
-
-
-
-
-curl -X POST http://localhost:8080/api/houses \
-  -H "Content-Type: application/json" \
-  -d '{
-    "address": "123 Main St",
-    "price": 350000,
-    "bedrooms": 3,
-    "bathrooms": 2
-  }'
-
-
-  docker run --rm \
-  -v certs:/etc/letsencrypt/live \
-  -v certs-data:/etc/letsencrypt \
-  certbot/certbot certonly \
-  --standalone \
-  -d jacobvn.com -d staging.jacobvn.com \
-  --email jacob.fadsss@gmail.com --agree-tos --no-eff-email
-
-
-
-  sudo docker run -it --rm --name certbot \
-    -p 80:80 \
-    -v "/etc/letsencrypt:/etc/letsencrypt" \
-    -v "/var/lib/letsencrypt:/var/lib/letsencrypt" \
-    certbot/certbot certonly
-
-  docker logs certbot
-
-
+#### Github:
+- Make a secret called PROD_SSH_KEY
 ## Set up [appname]-infra folder
 - Create a repo named [appname]-infra
 - Have it be a separate folder named [appname]-infra
@@ -179,26 +172,6 @@ root@househub-prod-sfo2:/srv# sudo -u deploy git clone git@github.com:jacobwn/ho
 echo "[PAT (personal access token)]" | docker login ghcr.io -u jacobwn --password-stdin
 
 
-sudo rsync -a /srv/househub-infra/certs/letsencrypt/ /srv/househub-data/certs/letsencrypt/
-sudo docker run -it --rm \
-  -v /srv/househub-data/certs/letsencrypt:/etc/letsencrypt \
-  certbot/certbot certificates
+git tag -a v0.0.6 -m "Release version 0.0.6"
+git push origin v0.0.6
 
-sudo crontab -e
-
-
-
-  sudo docker run -it --rm --name certbot \
-  -p 80:80 \
-  -v "/srv/househub-infra/certs/letsencrypt/config:/etc/letsencrypt" \
-  -v "/srv/househub-infra/certs/letsencrypt/lib:/var/lib/letsencrypt" \
-  certbot/certbot certonly \
-
-
-
-0 */12 * * * docker run --rm \
--v /srv/househub-infra/certs/letsencrypt:/etc/letsencrypt \
--v /srv/househub-infra/webroot:/var/www/certbot \
-certbot/certbot renew --webroot -w /var/www/certbot \
---deploy-hook "docker exec nginx nginx -s reload"
-ss

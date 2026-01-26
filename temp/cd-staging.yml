@@ -1,31 +1,22 @@
-name: Production CI/CD
+name: Staging CI/CD
 
 on:
   push:
-    tags:
-      - 'v*.*.*'  # Trigger only on version tag push
+    branches:
+      - '**'
 
 jobs:
-  deploy-production:
+  build:
     runs-on: ubuntu-latest
-    environment: production  # optional: requires manual approval
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.set-tag.outputs.IMAGE_TAG }}
     steps:
-      # Checkout code if needed for compose files
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Set SHA and VERSION tags
-      - name: Set IMAGE_TAGS
-        run: |
-          # Short SHA of the commit that triggered the staging build
-          SHA_TAG=$(echo $GITHUB_SHA | cut -c1-7)
-          # VERSION_TAG from the Git tag push (e.g., v1.2.3)
-          VERSION_TAG=${GITHUB_REF#refs/tags/}
-
-          echo "SHA_TAG=$SHA_TAG" >> $GITHUB_ENV
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-
-      # Log in to GHCR
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -33,81 +24,59 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
-      # Tag SHA image with version and push to GHCR
-      - name: Tag and push version tag
+      - name: Set IMAGE_TAG from commit SHA
+        id: set-tag
         run: |
-          echo "Tagging and pushing images with version $VERSION_TAG"
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_OUTPUT
 
-          # Web image
-          docker pull ghcr.io/jacobwn/househub/web:$SHA_TAG
-          docker tag ghcr.io/jacobwn/househub/web:$SHA_TAG ghcr.io/jacobwn/househub/web:$VERSION_TAG
-          docker push ghcr.io/jacobwn/househub/web:$VERSION_TAG
+      - name: Build web image
+        run: docker build -f ./services/web/Dockerfile.web.prod -t ghcr.io/${{ github.repository }}/web:$IMAGE_TAG ./services/web
 
-          # Nginx image
-          docker pull ghcr.io/jacobwn/househub/nginx:$SHA_TAG
-          docker tag ghcr.io/jacobwn/househub/nginx:$SHA_TAG ghcr.io/jacobwn/househub/nginx:$VERSION_TAG
-          docker push ghcr.io/jacobwn/househub/nginx:$VERSION_TAG
+      - name: Push web image
+        run: docker push ghcr.io/${{ github.repository }}/web:$IMAGE_TAG
 
-      - name: Copy compose files via SCP
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          port: ${{ secrets.STAGING_PORT }}
-          source: "docker-compose.yaml,docker-compose.prod.yaml"
-          target: /home/deploy/app/
+      - name: Build nginx image
+        run: docker build -f ./infra/nginx/Dockerfile.nginx.prod -t ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG .
 
-      # Deploy to production server
-      - name: Deploy to production server
-        uses: appleboy/ssh-action@v1
-        env:
-          VERSION_TAG: ${{ env.VERSION_TAG }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          port: ${{ secrets.PROD_PORT }}
-          envs: VERSION_TAG, GHCR_PAT
-          script: |
-            cd /home/deploy/app
-            echo "Deploying version $VERSION_TAG"
-
-            # Login to GHCR (needed for docker-compose pull)
-            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
-
-            # Clean unused images (optional)
-            docker system prune -af
-
-            # Pull version-tagged images and deploy
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
-
-
-
-
-
+      - name: Push nginx image
+        run: docker push ghcr.io/${{ github.repository }}/nginx:$IMAGE_TAG
   deploy-staging:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: build
     steps:
-      - name: Deploy on server
-        uses: appleboy/ssh-action@v1
-        env:
-            IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
-            GHCR_PAT: ${{ secrets.GHCR_PAT }}
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
         with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          envs: IMAGE_TAG, GHCR_PAT
-          script: |
-            cd /home/deploy/app
-            echo "IMAGE_TAG=$IMAGE_TAG" > .env
-            echo $GHCR_PAT | docker login ghcr.io -u jacobwn --password-stdin
-            docker system prune -af
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml pull
-            docker compose -f docker-compose.yaml -f docker-compose.staging.yaml up -d
+          repository: jacobwn/househub-infra
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: infra
 
-            docker-compose -f docker-compose.prod.yml run --rm web npx prisma migrate deploy
+      - name: Set up SSH key
+        env:
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$STAGING_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy infra to staging server
+        run: |
+          rsync -avz --delete infra/ deploy@${{ secrets.STAGING_HOST }}:/srv/househub-infra/
+
+      - name: Deploy with docker compose
+        run: |
+          ssh deploy@${{ secrets.STAGING_HOST }} " set -e
+
+            cd /srv/househub-infra
+            export IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+            
+            docker compose -f docker-compose.staging.yaml pull
+            docker compose -f docker-compose.staging.yaml up -d
+
+            docker image prune -af
+          "
