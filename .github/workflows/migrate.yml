@@ -1,0 +1,30 @@
+name: Apply migrations to prod server
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker image tag to deploy'
+        required: true
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH key
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PROD_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Apply migrations on prod server
+        run: |
+          ssh deploy@${{ secrets.PROD_HOST }} '
+            set -e
+            docker run --rm \
+              --network prod_network \
+              -e DATABASE_URL="postgresql://${{ secrets.PROD_DB_USER }}:${{ secrets.PROD_DB_PASSWORD }}@prod-postgres:5432/househub_prod?schema=public" \
+              ghcr.io/jacobwn/househub/web-migrate:${{ github.event.inputs.image_tag }} \
+              npx prisma migrate deploy --schema=/app/prisma/schema.prisma'

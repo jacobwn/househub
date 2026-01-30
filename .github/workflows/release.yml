@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  version-tag-images:
+    runs-on: ubuntu-latest
+    # environment: production  # requires manual approval
+    steps:
+      - name: Get version tag
+        id: get-tag
+        run: echo "VERSION_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+        with:
+          repository: jacobwn/househub-infra
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: infra
+
+      - name: Set up prod server SSH key
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PROD_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
+
+      # - name: Copy infra to prod server
+      #   run: |
+      #     rsync -avz --delete infra/ deploy@${{ secrets.PROD_HOST }}:/srv/househub-infra/
+
+      - name: Set IMAGE_TAG from commit SHA
+        run: |
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          # SHORT_SHA="4b61630"
+          echo "IMAGE_TAG=$SHORT_SHA" >> $GITHUB_ENV
+ 
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Pull staging Docker web image and add version tag
+        run: |
+          docker pull ghcr.io/jacobwn/househub/web:${{ env.IMAGE_TAG }}
+          docker tag ghcr.io/jacobwn/househub/web:${{ env.IMAGE_TAG }} ghcr.io/jacobwn/househub/web:${{ env.VERSION_TAG }}
+          docker push ghcr.io/jacobwn/househub/web:${{ env.VERSION_TAG }}
+
+      - name: Pull staging Docker nginx image and add version tag
+        run: |
+          docker pull ghcr.io/jacobwn/househub/nginx:${{ env.IMAGE_TAG }}
+          docker tag ghcr.io/jacobwn/househub/nginx:${{ env.IMAGE_TAG }} ghcr.io/jacobwn/househub/nginx:${{ env.VERSION_TAG }}
+          docker push ghcr.io/jacobwn/househub/nginx:${{ env.VERSION_TAG }}
+
+      - name: Pull staging Docker migrate image and add version tag
+        run: |
+          docker pull ghcr.io/jacobwn/househub/web-migrate:${{ env.IMAGE_TAG }}
+          docker tag ghcr.io/jacobwn/househub/web-migrate:${{ env.IMAGE_TAG }} ghcr.io/jacobwn/househub/web-migrate:${{ env.VERSION_TAG }}
+          docker push ghcr.io/jacobwn/househub/web-migrate:${{ env.VERSION_TAG }}
+
+      - name: Tag infra repo
+        env:
+          VERSION_TAG: ${{ env.VERSION_TAG }}
+        run: |
+          git clone https://x-access-token:${{ secrets.HOUSEHUB_INFRA_PAT }}@github.com/jacobwn/househub-infra.git
+          cd househub-infra
+          git config user.email "jacob.fadsss@gmail.com"
+          git config user.name "CI Deploy"
+          git tag -a "$VERSION_TAG" -m "Production release $VERSION_TAG"
+          git push origin "$VERSION_TAG"
+

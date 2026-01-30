@@ -1,0 +1,70 @@
+name: Deploy to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Infra version tag (e.g. v1.3.0)"
+        required: true
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment: production  # requires manual approval
+    steps:
+      - name: Get version tag
+        id: get-tag
+        run: echo "VERSION_TAG=${{ inputs.release_tag }}" >> $GITHUB_ENV
+        # run: echo "VERSION_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Checkout infra repo
+        uses: actions/checkout@v4
+        with:
+          repository: jacobwn/househub-infra
+          ref: ${{ inputs.release_tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: infra
+
+      - name: Set up prod server SSH key
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PROD_SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy infra to prod server
+        run: |
+          rsync -avz --delete infra/ deploy@${{ secrets.PROD_HOST }}:/srv/househub-infra/
+
+      - name: Deploy with docker compose
+        run: |
+          ssh deploy@${{ secrets.PROD_HOST }} " set -e
+
+            cd /srv/househub-infra
+            export IMAGE_TAG=${{ inputs.release_tag }}
+            export DATABASE_URL="postgresql://${{ secrets.PROD_DB_USER }}:${{ secrets.PROD_DB_PASSWORD }}@prod-postgres:5432/househub_prod?schema=public"
+
+            docker compose -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.prod.yaml up -d
+          "
+
+      - name: Wait for app to be healthy
+        run: |
+          set -e
+
+          echo "Checking app health on prod server..."
+
+          for i in {1..10}; do
+            if ssh deploy@${{ secrets.PROD_HOST }} "curl -fsS https://jacobvn.com/"; then
+              echo "✅ App is healthy!"
+              exit 0
+            fi
+
+            echo "⏳ App not ready yet (attempt $i/10)..."
+            sleep 5
+          done
+
+          echo "❌ Health check failed after 10 attempts."
+          exit 1
